@@ -5,50 +5,65 @@ const get = require('lodash.get')
 const set = require('lodash.set')
 
 let CloudWatchLogs
-const LOGGERS = {}
-const colors = {
-  INFO: '\x1b[34m',
-  ERROR: '\x1b[31m',
-  WHITE: '\x1b[37m',
-  SUCCESS: '\x1b[32m',
-  WARNING: '\x1b[33m'
+const logConsole = {
+  show: true,
+  maxLine: 15,
+  maxLevel: 2
 }
+const logger = {
+  maxLine: 20,
+  maxLevel: 3
+}
+const LOGGERS = {}
+
 class Logger extends EventEmitter {
-  constructor(props) {
+  constructor (props) {
     super(props)
     this._working = false
   }
 
-  info(name = '', ...args) {
+  info (name = '', ...args) {
     this.emit('log', 'info', name, ...args)
   }
 
-  success(name = '', ...args) {
+  success (name = '', ...args) {
     this.emit('log', 'success', name, ...args)
   }
 
-  warning(name = '', ...args) {
+  warning (name = '', ...args) {
     this.emit('log', 'warning', name, ...args)
   }
 
-  error(name = '', ...args) {
+  error (name = '', ...args) {
     this.emit('log', 'error', name, ...args)
   }
 
-  static setAWSKeys(awsConfig) {
+  static setAWSKeys (awsConfig) {
     CloudWatchLogs = new AWS.CloudWatchLogs({
       apiVersion: '2014-03-28',
       ...awsConfig
     })
   }
 
-  config(loggerName, stream, { console: logConsole, logger }) {
+  setAWSKeys (awsConfig) {
+    CloudWatchLogs = new AWS.CloudWatchLogs({
+      apiVersion: '2014-03-28',
+      ...awsConfig
+    })
+  }
+
+  config (loggerName, stream, config) {
+    if (!config) {
+      config = { logConsole, logger }
+    }
     const STAGE = process.env.STAGE || 'dev'
     this.loggerName = (`${STAGE}-${loggerName || 'noname'}`).toUpperCase()
     this.streamName = `${stream.toUpperCase() || 'noname'} ${(new Date()).toLocaleDateString()}`
     this.stream = `${stream.toUpperCase() || 'noname'}`
-    const { show: showConsole, maxLine: maxLineConsole, maxLevel: maxLevelConsole } = logConsole
-    const { maxLine: maxLineLogger, maxLevel: maxLevelLogger } = logger
+    this.console = this.console ? this.console : {}
+    this.logger = this.logger ? this.logger : {}
+    const { show: showConsole, maxLine: maxLineConsole, maxLevel: maxLevelConsole } = config.logConsole
+    const { maxLine: maxLineLogger, maxLevel: maxLevelLogger } = config.logger
     this.console.show = showConsole || true
     this.console.maxLine = maxLineConsole || 15
     this.console.maxLevel = maxLevelConsole || 2
@@ -60,20 +75,26 @@ class Logger extends EventEmitter {
 
 const Loging = new Logger()
 
-Loging.on('log', function log(type, first, ...args) {
+Loging.on('log', function log (type, first, ...args) {
   const TYPE = type.toUpperCase()
   const FIRST = first.toUpperCase()
   const argsToStrings = args.map(el =>
     typeof el === 'string' ? el : Util.inspect(el, { compact: true, depth: this.logger.maxLevel, breakLength: this.logger.maxLine })
   )
-
-  if (this.config.showConsole) {
+  if (this.console.show) {
     this.emit('consoleLog', TYPE, FIRST, ...args)
   }
   this.emit('stackMessages', TYPE, FIRST, ...argsToStrings)
 })
 
-Loging.on('consoleLog', function consoleLog(type, first, ...args) {
+Loging.on('consoleLog', function consoleLog (type, first, ...args) {
+  const colors = {
+    INFO: '\x1b[34m',
+    ERROR: '\x1b[31m',
+    WHITE: '\x1b[37m',
+    SUCCESS: '\x1b[32m',
+    WARNING: '\x1b[33m'
+  }
   const TYPE = type.toUpperCase()
   const FIRST = first.toUpperCase()
   const argsToStrings = args.map(el =>
@@ -90,7 +111,7 @@ Loging.on('consoleLog', function consoleLog(type, first, ...args) {
   console.log(colors[TYPE], head, colors['WHITE'], string)
 })
 
-Loging.on('stackMessages', function stackMessages(type, first, ...args) {
+Loging.on('stackMessages', function stackMessages (type, first, ...args) {
   const logString = Util.format('[%s]:[%s]: %s', type, first, ...args)
   const logName = this.loggerName
   const streamName = this.streamName
@@ -101,7 +122,7 @@ Loging.on('stackMessages', function stackMessages(type, first, ...args) {
   }
 
   const logEvents = get(LOGGERS, `${logName}.${streamName}.logEvents`)
-  const newLogsEvents = (logEvents.length || []).concat({ message: logString, timestamp: (new Date()).getTime() })
+  const newLogsEvents = (logEvents || []).concat({ message: logString, timestamp: (new Date()).getTime() })
   set(LOGGERS, `${logName}.${streamName}.logEvents`, newLogsEvents)
 
   if (CloudWatchLogs && newLogsEvents.length && this._working === false) {
@@ -112,7 +133,7 @@ Loging.on('stackMessages', function stackMessages(type, first, ...args) {
   }
 })
 
-Loging.on('createLogGroup', function createLogGroup(stacks) {
+Loging.on('createLogGroup', function createLogGroup (stacks) {
   CloudWatchLogs.createLogGroup({ logGroupName: this.loggerName }, err => {
     if (err && !(/log group already exists/ig.test((new Error(err)).message))) {
       this.emit('error', 'ERROR TRYING CREATE A LOG GROUP AWS', err)
@@ -122,7 +143,7 @@ Loging.on('createLogGroup', function createLogGroup(stacks) {
   })
 })
 
-Loging.on('createLogStream', function createLogStream(stacks) {
+Loging.on('createLogStream', function createLogStream (stacks) {
   const params = {
     logGroupName: this.loggerName,
     logStreamName: this.streamName
@@ -136,7 +157,7 @@ Loging.on('createLogStream', function createLogStream(stacks) {
   })
 })
 
-Loging.on('sendMessage', function sendMessage(stacks) {
+Loging.on('sendMessage', function sendMessage (stacks) {
   const logName = this.loggerName
   const streamName = this.streamName
   const sequenceToken = get(LOGGERS, `${logName}.${streamName}.sequenceToken`)
@@ -151,11 +172,6 @@ Loging.on('sendMessage', function sendMessage(stacks) {
 
   CloudWatchLogs.putLogEvents(params, (err, data) => {
     if (err) {
-      console.log('===================ERROR=========================')
-      console.log('===================ERROR=========================')
-      console.log('ERROR sended!!', err)
-      console.log('===================ERROR=========================')
-      console.log('===================ERROR=========================')
       const str = (new Error(err)).message
       const sequence = /The next expected sequenceToken is/ig.test(str)
         ? Array.isArray(str.match(/\d{30,}/g)) ? str.match(/\d{30,}/g) : null : []
@@ -177,17 +193,12 @@ Loging.on('sendMessage', function sendMessage(stacks) {
       if (data.nextSequenceToken) {
         set(LOGGERS, `${logName}.${streamName}.sequenceToken`, data.nextSequenceToken)
       }
-      console.log('============================================')
-      console.log('============================================')
-      console.log('Messages sended!!', LOGGERS)
-      console.log('============================================')
-      console.log('============================================')
       this.emit('finishSendMessage')
     }
   })
 })
 
-Loging.on('getToken', function getToken(stacks) {
+Loging.on('getToken', function getToken (stacks) {
   const logName = this.loggerName
   const streamName = this.streamName
   const params = { logGroupName: logName, logStreamName: streamName }
@@ -203,7 +214,7 @@ Loging.on('getToken', function getToken(stacks) {
   })
 })
 
-Loging.on('finishSendMessage', function finishSendMessage() {
+Loging.on('finishSendMessage', function finishSendMessage () {
   const logName = this.loggerName
   const streamName = this.streamName
   const logEvents = get(LOGGERS, `${logName}.${streamName}.logEvents`)
@@ -213,19 +224,19 @@ Loging.on('finishSendMessage', function finishSendMessage() {
     this.emit('sendMessage', stacks)
   } else {
     this._working = false
-    this.emit('done', 'sucess send', logEvents)
+    this.emit('done', 'sucess send')
   }
 })
 
-Loging.on('error', function error(describe, error) {
+Loging.on('error', function error (describe, error) {
   if (!/aws/ig.test(describe)) {
     this.emit('stackMessages', 'error', error)
   }
   this.emit('consoleLog', 'error', describe, error)
 })
 
-Loging.on('done', function done(msg) {
-  this.emit('consoleLog', 'sucess', ...msg, JSON.stringify(LOGGERS))
+Loging.on('done', function done (...msg) {
+  this.emit('consoleLog', 'success', 'mensaje enviado - terminado', ...msg, JSON.stringify(LOGGERS))
 })
 
 export default Loging
