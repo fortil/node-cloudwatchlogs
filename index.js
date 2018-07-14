@@ -15,6 +15,13 @@ const logger = {
   countMsgToSend: 20,
   maxLevel: 3
 }
+const colors = {
+  INFO: '\x1b[34m',
+  ERROR: '\x1b[31m',
+  WHITE: '\x1b[37m',
+  SUCCESS: '\x1b[32m',
+  WARNING: '\x1b[33m'
+}
 const LOGGERS = {}
 
 module.exports.getAllMessages = () => {
@@ -105,13 +112,6 @@ Loging.on('log', function log (type, first, ...args) {
 })
 
 Loging.on('consoleLog', function consoleLog (type, first, ...args) {
-  const colors = {
-    INFO: '\x1b[34m',
-    ERROR: '\x1b[31m',
-    WHITE: '\x1b[37m',
-    SUCCESS: '\x1b[32m',
-    WARNING: '\x1b[33m'
-  }
   const TYPE = type.toUpperCase()
   const FIRST = first.toUpperCase()
   const argsToStrings = args.map(el =>
