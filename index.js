@@ -15,26 +15,26 @@ const logger = {
   countMsgToSend: 20,
   maxLevel: 3
 }
-const colors = {
-  INFO: '\x1b[34m',
-  ERROR: '\x1b[31m',
-  WHITE: '\x1b[37m',
-  SUCCESS: '\x1b[32m',
-  WARNING: '\x1b[33m'
-}
-const LOGGERS = {}
+const LOGGERS = { totalMessages: 0 }
 
-module.exports.getAllMessages = () => {
+export const getAllMessages = () => {
   const groups = Object.keys(LOGGERS)
-  const pathTologEvents = groups.reduce((prev, curr) => {
+  const events = groups.reduce((prev, curr) => {
+    if (curr === 'totalMessages') {
+      return prev
+    }
     const streamsOfGroup = Object.keys(LOGGERS[curr])
-    const routes = streamsOfGroup.map(stream => `${curr}.${stream}.logEvents`)
+    const routes = streamsOfGroup.map(stream => ({ name: curr, stream, path: `${curr}.${stream}.logEvents` }))
     prev = prev.concat(routes)
     return prev
   }, [])
   let messages = []
-  for (let i = 0; i < pathTologEvents.length; i++) {
-    messages = messages.concat(get(LOGGERS, pathTologEvents[i]))
+  for (let i = 0; i < events.length; i++) {
+    const message = get(LOGGERS, events[i].path)
+    if (message.length) {
+      const data = { name: events[i].name, stream: events[i].stream, messages: message }
+      messages = messages.concat(data)
+    }
   }
   return messages
 }
@@ -112,6 +112,13 @@ Loging.on('log', function log (type, first, ...args) {
 })
 
 Loging.on('consoleLog', function consoleLog (type, first, ...args) {
+  const colors = {
+    INFO: '\x1b[34m',
+    ERROR: '\x1b[31m',
+    WHITE: '\x1b[37m',
+    SUCCESS: '\x1b[32m',
+    WARNING: '\x1b[33m'
+  }
   const TYPE = type.toUpperCase()
   const FIRST = first.toUpperCase()
   const argsToStrings = args.map(el =>
@@ -145,26 +152,31 @@ Loging.on('stackMessages', function stackMessages (type, first, ...args) {
 
   const newLogsEvents = (logEvents || []).concat({ message: logString, timestamp: (new Date()).getTime() })
   set(LOGGERS, `${logName}.${streamName}.logEvents`, newLogsEvents)
-
+  const totalMessages = parseInt(get(LOGGERS, `totalMessages`))
+  set(LOGGERS, `totalMessages`, totalMessages + 1)
   if (
     CloudWatchLogs &&
-    newLogsEvents.length &&
-    newLogsEvents.length === this.logger.count &&
+    // newLogsEvents.length &&
+    totalMessages >= this.logger.count &&
     this._working === false
   ) {
     this._working = true
-    const stacks = [...newLogsEvents]
-    set(LOGGERS, `${logName}.${streamName}.logEvents`, [])
-    this.emit('sendMessage', stacks)
+    const messages = getAllMessages()
+    const element = messages[0]
+    if (element) {
+      set(LOGGERS, `totalMessages`, totalMessages - element.messages.length)
+      set(LOGGERS, `${element.name}.${element.stream}.logEvents`, [])
+      this.emit('sendMessage', element)
+    }
   }
 })
 
-Loging.on('sendMessage', function sendMessage (stacks) {
-  const logName = this.loggerName
-  const streamName = this.streamName
+Loging.on('sendMessage', function sendMessage (element) {
+  const logName = element.name
+  const streamName = element.stream
   const sequenceToken = get(LOGGERS, `${logName}.${streamName}.sequenceToken`)
   const params = {
-    logEvents: stacks,
+    logEvents: element.messages,
     logGroupName: logName,
     logStreamName: streamName,
     ...(
@@ -175,10 +187,10 @@ Loging.on('sendMessage', function sendMessage (stacks) {
   CloudWatchLogs.putLogEvents(params, (err, data) => {
     if (err) {
       if (/The specified log group does not exist/ig.test(err.stack)) {
-        return this.emit('createLogGroup', stacks)
+        return this.emit('createLogGroup', element)
       }
       if (/The specified log stream does not exist/ig.test(err.stack)) {
-        return this.emit('createLogStream', stacks)
+        return this.emit('createLogStream', element)
       }
       const str = (new Error(err)).message
       const match = str.match(/\d{30,}/g)
@@ -188,14 +200,14 @@ Loging.on('sendMessage', function sendMessage (stacks) {
       if ((Array.isArray(sequence) && sequence.length) || sequence === null) {
         set(LOGGERS, `${logName}.${streamName}.sequenceToken`,
           Array.isArray(sequence) ? sequence[0] : sequence)
-        return this.emit('sendMessage', stacks)
+        return this.emit('sendMessage', element)
       }
 
       if (
         /nextSequenceToken/ig.test((new Error(err)).message) ||
         /sequenceToken/ig.test((new Error(err)).message)
       ) {
-        this.emit('getToken', stacks)
+        this.emit('getToken', element)
       } else {
         this.emit('error', 'IT WAS IMPOSSIBLE UPLOAD THE LOGS AWS', err)
       }
@@ -208,33 +220,33 @@ Loging.on('sendMessage', function sendMessage (stacks) {
   })
 })
 
-Loging.on('createLogGroup', function createLogGroup (stacks) {
-  CloudWatchLogs.createLogGroup({ logGroupName: this.loggerName }, err => {
+Loging.on('createLogGroup', function createLogGroup (element) {
+  CloudWatchLogs.createLogGroup({ logGroupName: element.name }, err => {
     if (err && !(/log group already exists/ig.test((new Error(err)).message))) {
       this.emit('error', 'ERROR TRYING CREATE A LOG GROUP AWS', err)
     } else {
-      this.emit('sendMessage', stacks)
+      this.emit('sendMessage', element)
     }
   })
 })
 
-Loging.on('createLogStream', function createLogStream (stacks) {
+Loging.on('createLogStream', function createLogStream (element) {
   const params = {
-    logGroupName: this.loggerName,
-    logStreamName: this.streamName
+    logGroupName: element.name,
+    logStreamName: element.stream
   }
   CloudWatchLogs.createLogStream(params, err => {
     if (err && !(/log stream already exists/ig.test((new Error(err)).message))) {
       this.emit('error', 'ERROR TO CREATE THE AWS LOGSTREAM', err)
     } else {
-      this.emit('sendMessage', stacks)
+      this.emit('sendMessage', element)
     }
   })
 })
 
-Loging.on('getToken', function getToken (stacks) {
-  const logName = this.loggerName
-  const streamName = this.streamName
+Loging.on('getToken', function getToken (element) {
+  const logName = element.name
+  const streamName = element.stream
   const params = { logGroupName: logName, logStreamName: streamName }
   CloudWatchLogs.getLogEvents(params, (err, data) => {
     if (err) {
@@ -242,20 +254,20 @@ Loging.on('getToken', function getToken (stacks) {
     } else {
       if (data.nextForwardToken) {
         set(LOGGERS, `${logName}.${streamName}.sequenceToken`, data.nextForwardToken)
-        this.emit('sendMessage', stacks)
+        this.emit('sendMessage', element)
       }
     }
   })
 })
 
 Loging.on('finishSendMessage', function finishSendMessage () {
-  const logName = this.loggerName
-  const streamName = this.streamName
-  const logEvents = get(LOGGERS, `${logName}.${streamName}.logEvents`)
-  if (logEvents && logEvents.length) {
-    const stacks = [...logEvents]
-    set(LOGGERS, `${logName}.${streamName}.logEvents`, [])
-    this.emit('sendMessage', stacks)
+  const messages = getAllMessages()
+  if (messages.length) {
+    const element = messages[0]
+    const totalMessages = parseInt(get(LOGGERS, `totalMessages`))
+    set(LOGGERS, `totalMessages`, totalMessages - element.messages.length)
+    set(LOGGERS, `${element.name}.${element.stream}.logEvents`, [])
+    this.emit('sendMessage', element)
   } else {
     this._working = false
     this.emit('done', 'sucess send')
@@ -269,4 +281,9 @@ Loging.on('error', function error (describe, error) {
   this.emit('consoleLog', 'error', describe, error)
 })
 
+Loging.on('done', function done (...msg) {
+  // this.emit('consoleLog', 'success', 'mensaje enviado - terminado', ...msg, JSON.stringify(LOGGERS))
+})
+
+export default Loging
 module.exports = Loging
