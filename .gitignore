@@ -1,0 +1,20 @@
+# dependencies
+/node_modules
+node_modules/
+/.pnp
+.pnp.js
+.env-prod
+.env-stg
+# testing
+/coverage
+/server/credentials.json
+
+# misc
+.DS_Store
+
+npm-debug.log*
+package-lock.json
+yarn-debug.log*
+yarn-error.log*
+.idea
+.env
