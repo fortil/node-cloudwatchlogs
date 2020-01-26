@@ -85,9 +85,9 @@ class Logger extends EventEmitter {
     this.stream = `${stream.toUpperCase() || 'noname'}`
     this.console = this.console ? this.console : {}
     this.logger = this.logger ? this.logger : {}
-    const { show: showConsole, maxLine: maxLineConsole, maxLevel: maxLevelConsole } = config.logConsole
+    const { show: showConsole = false, maxLine: maxLineConsole, maxLevel: maxLevelConsole } = config.logConsole
     const { maxLine: maxLineLogger, maxLevel: maxLevelLogger, countMsgToSend } = config.logger
-    this.console.show = showConsole || true
+    this.console.show = showConsole
     this.console.maxLine = maxLineConsole || 15
     this.console.maxLevel = maxLevelConsole || 2
     this.logger.maxLine = maxLineLogger || 20
