@@ -1,6 +1,6 @@
 {
   "name": "node-cloudwatchlogs",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Logger to AWS CloudWatchLogs and NodeJS",
   "main": "index.js",
   "engines": {
