@@ -7,7 +7,7 @@ export declare namespace cloudwatchlogs {
     maxLevel: number;
   }
   export interface Ilogger {
-    count: number;
+    count?: number;
     maxLine: number;
     countMsgToSend: number;
     maxLevel: number;
