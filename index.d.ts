@@ -1,6 +1,6 @@
 import events from 'events';
 
-declare namespace cloudwatchlogs {
+export declare namespace cloudwatchlogs {
   export interface IlogConsole {
     show: boolean;
     maxLine: number;
@@ -45,6 +45,11 @@ declare namespace cloudwatchlogs {
 
 }
 
+export type LoggerConfig = cloudwatchlogs.Ilogger;
+export type ConsoleConfig = cloudwatchlogs.IlogConsole;
+export type DataConfig = cloudwatchlogs.Idata;
+export type AWSConfig = cloudwatchlogs.IawsConfig;
+export type getAllMessages = cloudwatchlogs.getAllMessages;
+export type ClassLogger = cloudwatchlogs.Logger;
 export type TypeLogger = typeof cloudwatchlogs.Logger;
-
 export default new cloudwatchlogs.Logger();
