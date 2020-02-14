@@ -44,3 +44,7 @@ declare namespace cloudwatchlogs {
   }
 
 }
+
+export type TypeLogger = typeof cloudwatchlogs.Logger;
+
+export default new cloudwatchlogs.Logger();
