@@ -1,8 +1,10 @@
 {
   "name": "node-cloudwatchlogs",
-  "version": "0.0.3",
+  "version": "0.0.5",
   "description": "Logger to AWS CloudWatchLogs and NodeJS",
-  "main": "index.js",
+  "_location": "/node-cloudwatchlogs",
+  "main": "./lib/index.js",
+  "types": "./index.d.ts",
   "engines": {
     "node": ">=8.10"
   },
@@ -25,5 +27,11 @@
     "aws-sdk": "2.272.1",
     "lodash.get": "4.4.2",
     "lodash.set": "4.3.2"
+  },
+  "devDependencies": {
+    "@types/events": "^3.0.0",
+    "@types/lodash.get": "^4.4.6",
+    "@types/lodash.set": "^4.3.6",
+    "@types/node": "^13.7.1"
   }
 }

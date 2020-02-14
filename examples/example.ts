@@ -1,4 +1,4 @@
-const Logger = require('./index')
+import Logger from '../index';
 Logger.setAWSKeys({
   region: process.env.REGION_AWS,
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
