@@ -33,7 +33,7 @@
     "@types/events": "^3.0.0",
     "@types/lodash.get": "^4.4.6",
     "@types/lodash.set": "^4.3.6",
-    "@types/node": "^13.7.1",
+    "@types/node": "^13.7.4",
     "tsc": "^1.20150623.0",
     "typescript": "^3.8.2"
   }
