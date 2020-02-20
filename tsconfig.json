@@ -19,13 +19,17 @@
     "sourceMap": true,
     "noLib": false,
     "suppressImplicitAnyIndexErrors": true,
-    "baseUrl": "./"
+    "baseUrl": "."
   },
   "include": [
-    "index.ts"
+    "src/index.ts"
+  ],
+  "files": [
+    "src/index.ts"
   ],
   "exclude": [
     "node_modules",
+    "*.json",
     "**/node_modules/*"
   ]
 }

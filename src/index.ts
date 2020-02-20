@@ -107,14 +107,14 @@ export class Logger extends events.EventEmitter {
     this.loggerName = (`${STAGE}-${loggerName || 'noname'}`).toUpperCase()
     this.streamName = `${stream.toUpperCase() || 'noname'} ${(new Date()).toLocaleDateString()}`
     this.stream = `${stream.toUpperCase() || 'noname'}`
-    const { show: showConsole = false, maxLine: maxLineConsole, maxLevel: maxLevelConsole } = config.logConsole
-    const { maxLine: maxLineLogger, maxLevel: maxLevelLogger, countMsgToSend } = config.logger
+    const { show: showConsole = false, maxLine: maxLineConsole = 15, maxLevel: maxLevelConsole = 2 } = config.logConsole
+    const { maxLine: maxLineLogger = 20, maxLevel: maxLevelLogger = 3, countMsgToSend = 10 } = config.logger
     this.console.show = showConsole
-    this.console.maxLine = maxLineConsole || 15
-    this.console.maxLevel = maxLevelConsole || 2
-    this.logger.maxLine = maxLineLogger || 20
-    this.logger.count = countMsgToSend || 10
-    this.logger.maxLevel = maxLevelLogger || 3
+    this.console.maxLine = maxLineConsole
+    this.console.maxLevel = maxLevelConsole
+    this.logger.maxLine = maxLineLogger
+    this.logger.count = countMsgToSend
+    this.logger.maxLevel = maxLevelLogger
     return this
   }
 }
