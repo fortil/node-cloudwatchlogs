@@ -65,7 +65,7 @@ export class Logger extends events.EventEmitter {
   private loggerName: string;
   private streamName: string;
   private stream: string;
-  private console: IlogConsole;
+  private console: IlogConsole = {} as IlogConsole;
   private logger: Ilogger;
   private _working: boolean = false;
 
