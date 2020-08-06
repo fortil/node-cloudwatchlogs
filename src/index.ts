@@ -206,20 +206,17 @@ class Logger extends events.EventEmitter {
       const logString = Util.format('[%s]:[%s]: %s', type, first, ...args);
       const logName = this.loggerName;
       const streamName = this.streamName;
-      const LogStream = db.get(`LOGGERS.${logName}.${streamName}`).value(); // get(LOGGERS, `${logName}.${streamName}`)
-      const LogStreamEvents = db.get(`LOGGERS.${logName}.${streamName}.logEvents`).value(); // get(LOGGERS, `${logName}.${streamName}.logEvents`)
+      const LogStream = db.get(`LOGGERS.${logName}.${streamName}`).value();
+      const LogStreamEvents = db.get(`LOGGERS.${logName}.${streamName}.logEvents`).value();
 
       if (!LogStream || !LogStreamEvents) {
-        db.set(`LOGGERS.${logName}.${streamName}.logEvents`, []).write(); // set(LOGGERS, `${logName}.${streamName}.logEvents`, [])
+        db.set(`LOGGERS.${logName}.${streamName}.logEvents`, []).write();
       }
       // this function will update the totalMessage too
       (db.get(`LOGGERS.${logName}.${streamName}.logEvents`) as any).addMessage({ message: logString, timestamp: (new Date()).getTime() }).write();
       const totalMessages = db.get('totalMessages').value();
-      // const newLogsEvents = (logEvents || []).concat({ message: logString, timestamp: (new Date()).getTime() })
-      // set(LOGGERS, `${logName}.${streamName}.logEvents`, newLogsEvents)
-      // const totalMessages = parseInt(get(LOGGERS, `totalMessages`))
-      // set(LOGGERS, `totalMessages`, totalMessages + 1)
       const currentCount = this.logger.count || this.logger.countMsgToSend;
+
       if (
         CloudWatchLogs &&
         totalMessages >= currentCount &&
@@ -231,8 +228,6 @@ class Logger extends events.EventEmitter {
         if (element) {
           (db.set(`LOGGERS.${logName}.${streamName}.logEvents`, []) as any).write();
           db.update('totalMessages', n => n - element.length).write();
-          // set(LOGGERS, `totalMessages`, totalMessages - element.messages.length)
-          // set(LOGGERS, `${element.name}.${element.stream}.logEvents`, [])
           this.emit('sendMessage', element)
         }
       }
@@ -241,7 +236,7 @@ class Logger extends events.EventEmitter {
     Loging.on('sendMessage', function sendMessage(element) {
       const logName = element.name;
       const streamName = element.stream;
-      const sequenceToken = db.get(`LOGGERS.${logName}.${streamName}.sequenceToken`).value(); // get(LOGGERS, `${logName}.${streamName}.sequenceToken`)
+      const sequenceToken = db.get(`LOGGERS.${logName}.${streamName}.sequenceToken`).value();
       const params = {
         logEvents: element.messages,
         logGroupName: logName,
@@ -266,7 +261,6 @@ class Logger extends events.EventEmitter {
 
           if ((Array.isArray(sequence) && sequence.length) || sequence === null) {
             db.set(`LOGGERS.${logName}.${streamName}.sequenceToken`, Array.isArray(sequence) ? sequence[0] : sequence).write();
-            // set(LOGGERS, `${logName}.${streamName}.sequenceToken`, Array.isArray(sequence) ? sequence[0] : sequence);
             return this.emit('sendMessage', element);
           }
 
@@ -320,7 +314,6 @@ class Logger extends events.EventEmitter {
           this.emit('error', 'TOKEN: IT WAS IMPOSSIBLE GET ANOTHER TOKEN AWS', err)
         } else {
           if (data.nextForwardToken) {
-            // set(LOGGERS, `${logName}.${streamName}.sequenceToken`, data.nextForwardToken)
             db.set(`LOGGERS.${logName}.${streamName}.sequenceToken`, data.nextForwardToken).write();
             this.emit('sendMessage', element);
           }
@@ -332,11 +325,8 @@ class Logger extends events.EventEmitter {
       const messages = (db.get('LOGGERS') as any).getAllMessages().value();
       if (messages.length) {
         const element = messages[0];
-        // const totalMessages = parseInt((db.get('totalMessages') as any).getAllMessages().value());
-        // set(LOGGERS, `totalMessages`, totalMessages - element.messages.length)
         (db.set(`LOGGERS.${element.name}.${element.stream}.logEvents`, []) as any).write();
         db.update('totalMessages', n => n - element.length).write();
-        // set(LOGGERS, `${element.name}.${element.stream}.logEvents`, [])
         this.emit('sendMessage', element)
       } else {
         this._working = false;

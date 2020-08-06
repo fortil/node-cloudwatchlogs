@@ -1,6 +1,6 @@
 {
 	"name": "node-cloudwatchlogs",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"description": "Logger to AWS CloudWatchLogs and NodeJS",
 	"_location": "/node-cloudwatchlogs",
 	"main": "./lib/index.js",
