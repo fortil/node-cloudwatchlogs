@@ -6,8 +6,8 @@
 
 First, you should set AWS credentials...
 ```js
-const LOGGER = require('node-cloudwatchlogs')
-LOGGER.setAWSKeys({
+const Logger = require('node-cloudwatchlogs')
+Logger.setAWSKeys({
   region: process.env.REGION_AWS,
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
@@ -18,22 +18,31 @@ Next, you can use the logger on anywhere call to package. Always you need to sen
 The _info_,_success_,_warning_ and _error_ methods shows with colors (_blue_,_green_,_yellow_ nad _red_ respectly) the logs in NodeJS and put this state in the AWS Logs.
 
 ```js
-const Logger = require('node-cloudwatchlogs')
+require('dotenv').config();
+const Logger = require('node-cloudwatchlogs');
+Logger.setAWSKeys({
+  region: process.env.REGION_AWS,
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+})
+
+Logger.setConfig({
+  env: process.env.NODE_ENV || 'development', // it could takes from the NODE_ENV if you don't put anything
+  logger: { // to aws cloudt logs send
+    maxLine: 10, // max numbers for lines in each log
+    countMsgToSend: 20, // numbers of logs group to send (each 20 messages)
+    maxLevel: 3 // objects depth to send
+  },
+  logConsole: { // logs for nodejs
+    show: true, // if you want to show the logs in the node logs
+    maxLine: 15, // max lines to show
+    maxLevel: 2 // objects depth to show
+  }
+})
+
 const logGroup1Stream1 = Logger.config(
   'TEST', // logs group
-  `EXAMPLE 1`, // logs stream for each group
-  {
-    logger: { // to aws cloudt logs send
-      maxLine: 10, // max numbers for lines in each log
-      countMsgToSend: 20, // numbers of logs group to send (each 20 messages)
-      maxLevel: 3 // objects depth to send
-    },
-    logConsole: { // logs for nodejs
-      show: true, // if you want to show the logs in the node logs
-      maxLine: 15, // max lines to show
-      maxLevel: 2 // objects depth to show
-    }
-  }
+  `EXAMPLE 1` // logs stream for each group
 )
 
 const logGroup1Stream2 = Logger.config(
@@ -49,14 +58,27 @@ const logGroup2Stream1 = Logger.config(
 const logGroup2Stream2 = Logger.config(
   'TEST1', // logs group
   `EXAMPLE 2`, // logs stream for each group
+  {
+    environment: 'staging',
+    logger: { // to aws cloudt logs send
+      maxLine: 10, // max numbers for lines in each log
+      countMsgToSend: 20, // numbers of logs group to send (each 20 messages)
+      maxLevel: 3 // objects depth to send
+    },
+    logConsole: { // logs for nodejs
+      show: true, // if you want to show the logs in the node logs
+      maxLine: 15, // max lines to show
+      maxLevel: 2 // objects depth to show
+    }
+  }
 )
 
-logGroup1Stream1.info('EXAMPLE VOCALS', 'A' )
-logGroup1Stream1.info('EXAMPLE VOCALS', 'B' )
-logGroup1Stream1.error('EXAMPLE VOCALS', 'C' )
-logGroup1Stream2.error('EXAMPLE VOCALS', 'D' )
-logGroup1Stream2.error('EXAMPLE VOCALS', 'E' )
-logGroup1Stream2.warning('EXAMPLE VOCALS', 'F' )
+logGroup1Stream1.info('EXAMPLE VOCALS', 'A')
+logGroup1Stream1.info('EXAMPLE VOCALS', 'B')
+logGroup1Stream1.error('EXAMPLE VOCALS', 'C')
+logGroup1Stream2.error('EXAMPLE VOCALS', 'D')
+logGroup1Stream2.error('EXAMPLE VOCALS', 'E')
+logGroup1Stream2.warning('EXAMPLE VOCALS', 'F')
 
 setTimeout(() => {
   logGroup1Stream1.warning('EXAMPLE VOCALS', 'G')
@@ -84,6 +106,8 @@ setTimeout(() => {
   logGroup2Stream2.success('EXAMPLE WHIT NUMBERS', 10)
   logGroup2Stream2.success('EXAMPLE WHIT NUMBERS', 11)
 }, 9000)
+
+require('net').createServer().listen();
 
 ```
 #### NodeJS Logs

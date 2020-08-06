@@ -16,7 +16,14 @@
 	"repository": "https://github.com/fortil/node-cloudwatchlogs",
 	"author": "William Penagos <info@williampenagos.com>",
 	"license": "MIT",
-	"keywords": [ "aws", "cloudwatch", "logs", "logging", "cloudwatchlogs", "amazon" ],
+	"keywords": [
+		"aws",
+		"cloudwatch",
+		"logs",
+		"logging",
+		"cloudwatchlogs",
+		"amazon"
+	],
 	"dependencies": {
 		"@types/lowdb": "^1.0.9",
 		"aws-sdk": "2.272.1",
@@ -28,9 +35,9 @@
 		"@types/events": "^3.0.0",
 		"@types/lodash.get": "^4.4.6",
 		"@types/lodash.set": "^4.3.6",
-		"@types/node": "^13.7.4",
+		"@types/node": "^13.13.15",
 		"dotenv": "^8.2.0",
 		"tsc": "^1.20150623.0",
-		"typescript": "^3.8.2"
+		"typescript": "^3.9.7"
 	}
 }

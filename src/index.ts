@@ -227,7 +227,6 @@ class Logger extends events.EventEmitter {
       ) {
         this._working = true;
         const messages = (db.get('LOGGERS') as any).getAllMessages().value();
-        console.log('====>messages[0]', messages[0].name, ' | count', messages[0].messages.length);
         const element = messages[0];
         if (element) {
           (db.set(`LOGGERS.${logName}.${streamName}.logEvents`, []) as any).write();
@@ -281,7 +280,6 @@ class Logger extends events.EventEmitter {
           }
         } else {
           if (data.nextSequenceToken) {
-            console.log('===> done and ther is more!')
             db.set(`LOGGERS.${logName}.${streamName}.sequenceToken`, data.nextSequenceToken);
           }
           this.emit('finishSendMessage')
@@ -332,10 +330,8 @@ class Logger extends events.EventEmitter {
 
     Loging.on('finishSendMessage', function finishSendMessage() {
       const messages = (db.get('LOGGERS') as any).getAllMessages().value();
-      console.log('===>messages=>finishSendMessage', messages.length)
       if (messages.length) {
         const element = messages[0];
-        console.log('====>finishSendMessage', element.name, ' | count', element.messages.length);
         // const totalMessages = parseInt((db.get('totalMessages') as any).getAllMessages().value());
         // set(LOGGERS, `totalMessages`, totalMessages - element.messages.length)
         (db.set(`LOGGERS.${element.name}.${element.stream}.logEvents`, []) as any).write();
