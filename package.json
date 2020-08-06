@@ -1,40 +1,36 @@
 {
-  "name": "node-cloudwatchlogs",
-  "version": "0.0.73",
-  "description": "Logger to AWS CloudWatchLogs and NodeJS",
-  "_location": "/node-cloudwatchlogs",
-  "main": "./lib/index.js",
-  "types": "./types/index.d.ts",
-  "engines": {
-    "node": ">=8.10"
-  },
-  "scripts": {
-    "test": "jest",
-    "start": "node index.js",
-    "compile": "tsc --project tsconfig.json"
-  },
-  "repository": "https://github.com/fortil/node-cloudwatchlogs",
-  "author": "William Penagos <info@williampenagos.com>",
-  "license": "MIT",
-  "keywords": [
-    "aws",
-    "cloudwatch",
-    "logs",
-    "logging",
-    "cloudwatchlogs",
-    "amazon"
-  ],
-  "dependencies": {
-    "aws-sdk": "2.272.1",
-    "lodash.get": "4.4.2",
-    "lodash.set": "4.3.2"
-  },
-  "devDependencies": {
-    "@types/events": "^3.0.0",
-    "@types/lodash.get": "^4.4.6",
-    "@types/lodash.set": "^4.3.6",
-    "@types/node": "^13.7.4",
-    "tsc": "^1.20150623.0",
-    "typescript": "^3.8.2"
-  }
+	"name": "node-cloudwatchlogs",
+	"version": "0.1.0",
+	"description": "Logger to AWS CloudWatchLogs and NodeJS",
+	"_location": "/node-cloudwatchlogs",
+	"main": "./lib/index.js",
+	"types": "./types/index.d.ts",
+	"engines": {
+		"node": ">=8.10"
+	},
+	"scripts": {
+		"test": "jest",
+		"start": "node index.js",
+		"compile": "tsc --project tsconfig.json"
+	},
+	"repository": "https://github.com/fortil/node-cloudwatchlogs",
+	"author": "William Penagos <info@williampenagos.com>",
+	"license": "MIT",
+	"keywords": [ "aws", "cloudwatch", "logs", "logging", "cloudwatchlogs", "amazon" ],
+	"dependencies": {
+		"@types/lowdb": "^1.0.9",
+		"aws-sdk": "2.272.1",
+		"lodash.get": "4.4.2",
+		"lodash.set": "4.3.2",
+		"lowdb": "^1.0.0"
+	},
+	"devDependencies": {
+		"@types/events": "^3.0.0",
+		"@types/lodash.get": "^4.4.6",
+		"@types/lodash.set": "^4.3.6",
+		"@types/node": "^13.7.4",
+		"dotenv": "^8.2.0",
+		"tsc": "^1.20150623.0",
+		"typescript": "^3.8.2"
+	}
 }

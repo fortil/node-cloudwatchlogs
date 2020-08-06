@@ -18,3 +18,9 @@ yarn-debug.log*
 yarn-error.log*
 .idea
 .env
+src/*.js
+src/*.map
+src/*.json
+examples/*.js
+examples/*.map
+examples/*.json
