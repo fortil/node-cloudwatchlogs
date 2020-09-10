@@ -1,6 +1,6 @@
 {
 	"name": "node-cloudwatchlogs",
-	"version": "0.1.2",
+	"version": "0.1.5",
 	"description": "Logger to AWS CloudWatchLogs and NodeJS",
 	"_location": "/node-cloudwatchlogs",
 	"main": "./lib/index.js",
@@ -14,7 +14,7 @@
 		"compile": "tsc --project tsconfig.json"
 	},
 	"repository": "https://github.com/fortil/node-cloudwatchlogs",
-	"author": "William Penagos <info@williampenagos.com>",
+	"author": "William Penagos <billalpeza@gmail.com>",
 	"license": "MIT",
 	"keywords": [ "aws", "cloudwatch", "logs", "logging", "cloudwatchlogs", "amazon" ],
 	"dependencies": {

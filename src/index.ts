@@ -6,7 +6,7 @@ import Util from 'util';
 import low from 'lowdb';
 const { resolve } = require('path');
 const FileSync = require('lowdb/adapters/FileSync');
-const pathData = resolve(__dirname, `data.json`);
+const pathData = resolve(__dirname, '../../../../', `data-logger.json`);
 const adapter = new FileSync(pathData);
 const db = low(adapter);
 
@@ -324,9 +324,9 @@ class Logger extends events.EventEmitter {
     Loging.on('finishSendMessage', function finishSendMessage() {
       const messages = (db.get('LOGGERS') as any).getAllMessages().value();
       if (messages.length) {
+        db.set('totalMessages', messages.length - 1).write();
         const element = messages[0];
         (db.set(`LOGGERS.${element.name}.${element.stream}.logEvents`, []) as any).write();
-        db.update('totalMessages', n => n - element.length).write();
         this.emit('sendMessage', element)
       } else {
         this._working = false;
