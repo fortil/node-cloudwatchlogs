@@ -52,7 +52,7 @@ db._.mixin({
   addMessage(items, newItem) {
     if (Array.isArray(items)) {
       items.push(newItem);
-      db.update('totalMessages', n => n + 1).write();
+      db.update('totalMessages', n => typeof n === 'number' ? n + 1 : 0).write();
       return items;
     } else {
       return Object.assign({}, items, { ...newItem });
@@ -227,7 +227,7 @@ class Logger extends events.EventEmitter {
         const element = messages[0];
         if (element) {
           (db.set(`LOGGERS.${logName}.${streamName}.logEvents`, []) as any).write();
-          db.update('totalMessages', n => n - element.length).write();
+          db.set('totalMessages', messages.length - 1).write();
           this.emit('sendMessage', element)
         }
       }
