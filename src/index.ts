@@ -3,12 +3,19 @@ import events from 'events';
 import Util from 'util';
 // import get from 'lodash.get';
 // import set from 'lodash.set';
-import low from 'lowdb';
-const { resolve } = require('path');
+import low, { LowdbSync } from 'lowdb';
+const { resolve, dirname } = require('path');
 const FileSync = require('lowdb/adapters/FileSync');
-const pathData = resolve(__dirname, '../../../../', `data-logger.json`);
-const adapter = new FileSync(pathData);
-const db = low(adapter);
+let pathData: string, adapter, db: low.LowdbSync<any>;
+try {
+  pathData = resolve(dirname(require.main.filename), '../', `data-logger.json`);
+  adapter = new FileSync(pathData);
+  db = low(adapter) as unknown as LowdbSync<any>;
+} catch (e) {
+  pathData = resolve(dirname(require.main.filename), `data-logger.json`);
+  adapter = new FileSync(pathData);
+  db = low(adapter) as unknown as LowdbSync<any>;
+}
 
 let CloudWatchLogs: AWS.CloudWatchLogs;
 export interface IlogConsole {
@@ -73,9 +80,12 @@ db._.mixin({
       return prev;
     }, []);
     let messages: Idata[] = [];
+    if (!events.length) {
+      return [];
+    }
     for (let i = 0; i < events.length; i++) {
       const msgs = db.get(`LOGGERS.${events[i].path}`).value();
-      if (msgs.length) {
+      if (msgs && msgs.length) {
         const data: Idata = { name: events[i].name, stream: events[i].stream, messages: msgs };
         messages = messages.concat(data);
       }
