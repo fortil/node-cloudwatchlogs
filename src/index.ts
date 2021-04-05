@@ -1,4 +1,4 @@
-import AWS from 'aws-sdk';
+import { CloudWatchLogsClient, PutLogEventsCommand, CreateLogGroupCommand, CreateLogStreamCommand, GetLogEventsCommand } from "@aws-sdk/client-cloudwatch-logs";
 import events from 'events';
 import Util from 'util';
 // import get from 'lodash.get';
@@ -17,7 +17,7 @@ try {
   db = low(adapter) as unknown as LowdbSync<any>;
 }
 
-let CloudWatchLogs: AWS.CloudWatchLogs;
+let CloudWatchLogs: CloudWatchLogsClient;
 export interface IlogConsole {
   show: boolean;
   maxLine: number;
@@ -117,19 +117,19 @@ class Logger extends events.EventEmitter {
   }
 
   info(name: string = '', ...args: any[]) {
-    this.emit('log', 'info', name, ...args)
+    this.emit('log', 'info', name, ...args);
   }
 
   success(name: string = '', ...args: any[]) {
-    this.emit('log', 'success', name, ...args)
+    this.emit('log', 'success', name, ...args);
   }
 
   warning(name: string = '', ...args: any[]) {
-    this.emit('log', 'warning', name, ...args)
+    this.emit('log', 'warning', name, ...args);
   }
 
   error(name: string = '', ...args: any[]) {
-    this.emit('log', 'error', name, ...args)
+    this.emit('log', 'error', name, ...args);
   }
   static setConfig(config: { logConsole: IlogConsole, logger: Ilogger, env: 'development' | 'production' | 'staging' }): void {
     if (!config.logConsole) {
@@ -144,10 +144,7 @@ class Logger extends events.EventEmitter {
   }
 
   static setAWSKeys(awsConfig: IawsConfig) {
-    CloudWatchLogs = new AWS.CloudWatchLogs({
-      apiVersion: '2014-03-28',
-      ...awsConfig
-    })
+    CloudWatchLogs = new CloudWatchLogsClient(awsConfig);
   }
 
   static config(loggerName: string, stream: string, config?: IConfig): Logger {
@@ -169,9 +166,9 @@ class Logger extends events.EventEmitter {
 
     const STAGE = conf.environment;
     const name = { loggerName: '', streamName: '', stream: '' };
-    name.loggerName = (`${STAGE}-${loggerName || 'noname'}`).toUpperCase()
-    name.streamName = `${stream.toUpperCase() || 'noname'} ${(new Date()).toLocaleDateString()}`
-    name.stream = `${stream.toUpperCase() || 'noname'}`
+    name.loggerName = (`${STAGE}-${loggerName || 'noname'}`).toUpperCase();
+    name.streamName = `${stream.toUpperCase() || 'noname'} ${(new Date()).toLocaleDateString()}`;
+    name.stream = `${stream.toUpperCase() || 'noname'}`;
     // return new Logger(name);
 
     const Loging = new Logger(name, conf);
@@ -243,7 +240,7 @@ class Logger extends events.EventEmitter {
       }
     })
 
-    Loging.on('sendMessage', function sendMessage(element) {
+    Loging.on('sendMessage', async function sendMessage(element) {
       const logName = element.name;
       const streamName = element.stream;
       const sequenceToken = db.get(`LOGGERS.${logName}.${streamName}.sequenceToken`).value();
@@ -255,81 +252,82 @@ class Logger extends events.EventEmitter {
           sequenceToken ? { sequenceToken } : {}
         )
       };
-
-      CloudWatchLogs.putLogEvents(params, (err, data) => {
-        if (err) {
-          if (/The specified log group does not exist/ig.test(err.stack)) {
-            return this.emit('createLogGroup', element);
-          }
-          if (/The specified log stream does not exist/ig.test(err.stack)) {
-            return this.emit('createLogStream', element);
-          }
-          const str = err.message;
-          const match = str.match(/\d{30,}/g);
-          const sequence = /The next expected sequenceToken is/ig.test(str)
-            ? Array.isArray(match) ? match : null : [];
-
-          if ((Array.isArray(sequence) && sequence.length) || sequence === null) {
-            db.set(`LOGGERS.${logName}.${streamName}.sequenceToken`, Array.isArray(sequence) ? sequence[0] : sequence).write();
-            return this.emit('sendMessage', element);
-          }
-
-          if (
-            /nextSequenceToken/ig.test(err.message) ||
-            /sequenceToken/ig.test(err.message)
-          ) {
-            this.emit('getToken', element)
-          } else {
-            this.emit('error', 'IT WAS IMPOSSIBLE UPLOAD THE LOGS AWS', err)
-          }
-        } else {
-          if (data.nextSequenceToken) {
-            db.set(`LOGGERS.${logName}.${streamName}.sequenceToken`, data.nextSequenceToken);
-          }
-          this.emit('finishSendMessage')
+      try {
+        const data = await CloudWatchLogs.send(new PutLogEventsCommand(params));
+        if (data.nextSequenceToken) {
+          db.set(`LOGGERS.${logName}.${streamName}.sequenceToken`, data.nextSequenceToken);
         }
-      })
-    })
-
-    Loging.on('createLogGroup', function createLogGroup(element) {
-      CloudWatchLogs.createLogGroup({ logGroupName: element.name }, err => {
-        if (err && !(/log group already exists/ig.test(err.message))) {
-          this.emit('error', 'ERROR TRYING CREATE A LOG GROUP AWS', err)
-        } else {
-          this.emit('sendMessage', element)
+        this.emit('finishSendMessage');
+      } catch (error) {
+        if (/The specified log group does not exist/ig.test(error.stack)) {
+          return this.emit('createLogGroup', element);
         }
-      })
-    })
+        if (/The specified log stream does not exist/ig.test(error.stack)) {
+          return this.emit('createLogStream', element);
+        }
+        const str = error.message;
+        const match = str.match(/\d{30,}/g);
+        const sequence = /The next expected sequenceToken is/ig.test(str)
+          ? Array.isArray(match) ? match : null : [];
 
-    Loging.on('createLogStream', function createLogStream(element) {
+        if ((Array.isArray(sequence) && sequence.length) || sequence === null) {
+          db.set(`LOGGERS.${logName}.${streamName}.sequenceToken`, Array.isArray(sequence) ? sequence[0] : sequence).write();
+          return this.emit('sendMessage', element);
+        }
+
+        if (
+          /nextSequenceToken/ig.test(error.message) ||
+          /sequenceToken/ig.test(error.message)
+        ) {
+          this.emit('getToken', element)
+        } else {
+          this.emit('error', 'IT WAS IMPOSSIBLE UPLOAD THE LOGS AWS', error);
+        }
+      }
+    });
+
+    Loging.on('createLogGroup', async function createLogGroup(element) {
+      try {
+        await CloudWatchLogs.send(new CreateLogGroupCommand({ logGroupName: element.name }));
+        this.emit('sendMessage', element);
+      } catch (error) {
+        if (error && !(/log group already exists/ig.test(error.message))) {
+          this.emit('error', 'ERROR TRYING CREATE A LOG GROUP AWS', error);
+        }
+      }
+    });
+
+    Loging.on('createLogStream', async function createLogStream(element) {
       const params = {
         logGroupName: element.name,
         logStreamName: element.stream
+      };
+      try {
+        await CloudWatchLogs.send(new CreateLogStreamCommand(params));
+        this.emit('sendMessage', element)
+      } catch (error) {
+        if (error && !(/log stream already exists/ig.test(error.message))) {
+          this.emit('error', 'ERROR TO CREATE THE AWS LOGSTREAM', error);
+        }
       }
-      CloudWatchLogs.createLogStream(params, err => {
-        if (err && !(/log stream already exists/ig.test(err.message))) {
-          this.emit('error', 'ERROR TO CREATE THE AWS LOGSTREAM', err)
-        } else {
-          this.emit('sendMessage', element)
-        }
-      })
-    })
+    });
 
-    Loging.on('getToken', function getToken(element) {
-      const logName = element.name
-      const streamName = element.stream
-      const params = { logGroupName: logName, logStreamName: streamName }
-      CloudWatchLogs.getLogEvents(params, (err, data) => {
-        if (err) {
-          this.emit('error', 'TOKEN: IT WAS IMPOSSIBLE GET ANOTHER TOKEN AWS', err)
-        } else {
-          if (data.nextForwardToken) {
-            db.set(`LOGGERS.${logName}.${streamName}.sequenceToken`, data.nextForwardToken).write();
-            this.emit('sendMessage', element);
-          }
+    Loging.on('getToken', async function getToken(element) {
+      const logName = element.name;
+      const streamName = element.stream;
+      const params = { logGroupName: logName, logStreamName: streamName };
+      try {
+        const data = await CloudWatchLogs.send(new GetLogEventsCommand(params));
+        if (data.nextForwardToken) {
+          db.set(`LOGGERS.${logName}.${streamName}.sequenceToken`, data.nextForwardToken).write();
+          this.emit('sendMessage', element);
         }
-      })
-    })
+      } catch (error) {
+        if (error) {
+          this.emit('error', 'TOKEN: IT WAS IMPOSSIBLE GET ANOTHER TOKEN AWS', error);
+        }
+      }
+    });
 
     Loging.on('finishSendMessage', function finishSendMessage() {
       const messages = (db.get('LOGGERS') as any).getAllMessages().value();
@@ -342,18 +340,18 @@ class Logger extends events.EventEmitter {
         this._working = false;
         this.emit('done', 'sucess send');
       }
-    })
+    });
 
     Loging.on('error', function error(describe, error) {
       if (!/aws/ig.test(describe)) {
         this.emit('stackMessages', 'error', error)
       }
       this.emit('consoleLog', 'error', describe, error)
-    })
+    });
 
     Loging.on('done', function done(...msg) {
       // this.emit('consoleLog', 'success', 'mensaje enviado - terminado', ...msg, JSON.stringify(LOGGERS))
-    })
+    });
     return Loging;
   }
 }

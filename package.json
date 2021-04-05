@@ -1,6 +1,6 @@
 {
 	"name": "node-cloudwatchlogs",
-	"version": "0.1.7",
+	"version": "0.2.0",
 	"description": "Logger to AWS CloudWatchLogs and NodeJS",
 	"_location": "/node-cloudwatchlogs",
 	"main": "./lib/index.js",
@@ -25,8 +25,8 @@
 		"amazon"
 	],
 	"dependencies": {
+		"@aws-sdk/client-cloudwatch-logs": "^3.11.0",
 		"@types/lowdb": "^1.0.9",
-		"aws-sdk": "2.272.1",
 		"lodash.get": "4.4.2",
 		"lodash.set": "4.3.2",
 		"lowdb": "^1.0.0"
