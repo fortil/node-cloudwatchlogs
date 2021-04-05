@@ -3,6 +3,7 @@
   "compilerOptions": {
     "target": "es5",
     "allowJs": false,
+    "checkJs": false,
     "skipLibCheck": true,
     "noImplicitAny": true,
     "noImplicitReturns": true,
