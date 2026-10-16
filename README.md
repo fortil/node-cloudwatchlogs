@@ -1,3 +1,15 @@
+# node-cloudwatchlogs
+
+Logger to AWS CloudWatchLogs on NodeJS.
+
+<p align="center">
+  <a href="https://github.com/fortil/node-cloudwatchlogs"><img src="https://img.shields.io/badge/github-fortil%2Fnode--cloudwatchlogs-181717?logo=github" alt="github.com/fortil/node-cloudwatchlogs"></a>
+  <a href="https://www.npmjs.com/package/node-cloudwatchlogs"><img src="https://img.shields.io/npm/v/node-cloudwatchlogs?logo=npm" alt="npm version"></a>
+  <img src="https://img.shields.io/badge/node-%3E%3D12-339933?logo=node.js" alt="node >= 12">
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/AWS-CloudWatch-FF9900?logo=amazonaws" alt="AWS CloudWatch">
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT license">
+</p>
 
 ## INSTALL
 `npm i node-cloudwatchlogs`
